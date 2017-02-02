@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn import svm, datasets
 import logging
+from sklearn.metrics import classification_report
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
@@ -168,3 +169,25 @@ for categories in root1.iterfind("./review/categories"):
 print(Rating)
 
 print("the percentage of correct certain reviews equals " + str(correct/total*100)) # Вывод подсчета процента правлиьно отгаданных ооценок рецензий
+
+Marks_Fact = []
+for categories in root1.iterfind("./review/categories"):
+    for category in categories:
+        if category.attrib.get('name') == 'Whole':
+            Marks_Fact.append(category.attrib.get('sentiment'))
+
+Y_Fact = []
+for sentiment in Marks_Fact:
+    if sentiment == 'both':
+        Y_Fact.append(0)
+    elif sentiment == 'positive':
+        Y_Fact.append(1)
+    else:
+        Y_Fact.append(2)
+
+print("Fact: " + str(Y_Fact))
+print()
+print("Predicted: " + str(predicted))
+
+target_names = ['both', 'positive', 'negative']
+print(classification_report(Y_Fact, predicted, target_names=target_names))
