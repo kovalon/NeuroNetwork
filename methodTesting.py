@@ -15,11 +15,11 @@ logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=lo
 XML_FILE = open("SentiRuEval_rest_markup_train.xml", encoding="utf8")
 XML_FILE_2 = open("SentiRuEval_rest_markup_test.xml", encoding="utf8")
 
-
+# создание и подготовка модели
 model = Word2Vec(sentences=None, iter=5)
+# открытие xml документов
 tree = ET.ElementTree(file=XML_FILE)
 root = tree.getroot()
-
 
 List = []
 Train = []
@@ -31,29 +31,34 @@ List = []
 ArrayList = []
 Sentence = []
 buf = []
+# использование стоп-слов из библиотеки stopwords корпуса nltk.corpus
 stop_words = stopwords.words('russian')
+# добавление дополнительных стоп-слов
 additional_stop_words = [',', '.', '?', '!', '(', ')', '...', '{', '}', '[', ']', 'это', ':', '-', '+', "''", '``']
 stop_words += additional_stop_words
 print(stop_words)
+# Берем каждый текст из xml с тренировоынми даными, разбиваем его на предложения, а предложения на слова и записываем этот текст,
+# как список списков предложений в общий список текстов (исключая стоп-слова).
 for item in root.iterfind("./review/text"):
-    # print(str(count) + ": " + item.text)
-    ArrayList.append(word_tokenize(item.text))
-    buf = word_tokenize(item.text)
-    Sentence.append([w.lower() for w in buf if not w in (stop_words)])
-
     sentences = sent_tokenize(item.text)
     for unit in sentences:
         word_tokens = word_tokenize(unit)
         List.append([w.lower() for w in word_tokens if not w in (stop_words)])
 
+        # print(str(count) + ": " + item.text)
+        # ArrayList.append(word_tokenize(item.text))
+        # buf = word_tokenize(item.text)
+        # Sentence.append([w.lower() for w in buf if not w in (stop_words)])
 
+# Обучаем модель
 model = Word2Vec(List, iter=25, min_count=1)
-
+# Пример работы полученной модели
 print(model.most_similar('блюда', topn=10))
 print(model)
 Texts = []
 buf = []
 # count = 0
+# Теперь опять проходим по текстам, но уже для того, чтобы собрать список слов каждого предложения.
 for item in root.iterfind("./review/text"):
     buf = word_tokenize(item.text)
     Texts.append([w.lower() for w in buf if not w in (stop_words)])
@@ -61,7 +66,7 @@ for item in root.iterfind("./review/text"):
 count = 0
 amounts = []
 sum = 0
-
+# Составляем вектора текстов
 for text in Texts:
     # print(text)
     length = len(text)
@@ -77,6 +82,7 @@ for text in Texts:
     count += 1
 
 Marks = []
+# Собираем оценки рецензий
 for categories in root.iterfind("./review/categories"):
     # print(categories)
     for category in categories:
@@ -86,6 +92,7 @@ for categories in root.iterfind("./review/categories"):
 
 X = amounts
 Y = []
+# Сопоставляем полученные вектора оценкам
 for sentiment in Marks:
     if sentiment == 'both':
         Y.append(0)
@@ -94,8 +101,8 @@ for sentiment in Marks:
     else:
         Y.append(2)
 
-print(Y)
-
+print(Y) # Вектор оценок
+# Используем модель опорных векторов
 classifier = svm.SVC(kernel='linear', C=100000, gamma=1)
 # Используемые параметры можно варьировать
 classifier.fit(X, Y)
@@ -105,6 +112,7 @@ print(classifier)
 
 Texts = []
 count = 0
+# Берем тестовые данные
 tree1 = ET.ElementTree(file=XML_FILE_2)
 root1 = tree1.getroot()
 amounts = []
@@ -113,7 +121,7 @@ for item in root1.iterfind("./review/text"):
     buf = word_tokenize(item.text)
     Texts.append([w.lower() for w in buf if not w in (stop_words)])
 
-
+# Составляем векторное представление текстов тестовой выборки
 for text in Texts:
     # print(text)
     length = len(text)
@@ -130,33 +138,33 @@ for text in Texts:
         amounts.append(average)
     count += 1
 
-total = count
+total = count # общая сумма текстов тестовых данных
 # print(len(amounts))
-# print(count)
+print(count)
 
 # Прогноз
-predicted = classifier.predict(amounts)
+predicted = classifier.predict(amounts) # Подача векторов текстов модели SVM
 print(predicted)
 count = 0
 correct = 0
 Rating = []
+# Составление наглядного массива результативности алгоритма
 for categories in root1.iterfind("./review/categories"):
     # print(categories)
     for category in categories:
         if category.attrib.get('name') == 'Whole':
             if predicted[count] == 0 and category.attrib.get('sentiment') == "both":
                 Rating.append("both - correct")
-                correct += 1
+                correct += 1 # Если отгадано правильно, инкерментируем подсчет количества правильно отгаданных рецензий
             elif predicted[count] == 1 and category.attrib.get('sentiment') == 'positive':
                 Rating.append("positive - correct")
-                correct += 1
+                correct += 1 # Если отгадано правильно, инкерментируем подсчет количества правильно отгаданных рецензий
             elif predicted[count] == 2 and category.attrib.get('sentiment') == 'negative':
                 Rating.append("negative - correct")
-                correct += 1
+                correct += 1 # Если отгадано правильно, инкерментируем подсчет количества правильно отгаданных рецензий
             else:
                 Rating.append("bad result")
     count += 1
-
 print(Rating)
 
-print("the percentage of correct certain reviews equals "  + str(correct/total*100))
+print("the percentage of correct certain reviews equals " + str(correct/total*100)) # Вывод подсчета процента правлиьно отгаданных ооценок рецензий
