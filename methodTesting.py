@@ -13,6 +13,19 @@ from sklearn.metrics import classification_report
 from sklearn.naive_bayes import GaussianNB
 # from sklearn.neural_network import MLPClassifier
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import accuracy_score
+
+
+def getResult(precision, recall, f1Score, accuracy):
+    print("\t        Precision\t     Recall\t         f1-score\n" +
+          "both    \t" + str(precision[0]) + "\t" + str(recall[0]) + "\t" + str(f1Score[0]) + "\n" +
+          "positive\t" + str(precision[1]) + "\t" + str(recall[1]) + "\t" + str(f1Score[1]) + "\n" +
+          "negative\t" + str(precision[2]) + "\t" + str(recall[2]) + "\t" + str(f1Score[2]) + "\n")
+    print("accuracy\t" + str(accuracy))
+
 
 logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
 
@@ -30,8 +43,6 @@ List = []
 Train = []
 vocabulary = []
 
-List = []
-
 ArrayList = []
 Sentence = []
 buf = []
@@ -41,6 +52,19 @@ stop_words = stopwords.words('russian')
 additional_stop_words = [',', '.', '?', '!', '(', ')', '...', '{', '}', '[', ']', 'это', ':', '-', '+', "''", '``']
 stop_words += additional_stop_words
 print(stop_words)
+
+svmRecall = [0, 0, 0]
+svmPrecision = [0, 0, 0]
+svmF1score = [0, 0, 0]
+svmAccuracy = 0
+gnbRecall = [0, 0, 0]
+gnbPrecision = [0, 0, 0]
+gnbF1score = [0, 0, 0]
+gnbAccuracy = 0
+ldaRecall = [0, 0, 0]
+ldaPrecision = [0, 0, 0]
+ldaF1score = [0, 0, 0]
+ldaAccuracy = 0
 # Берем каждый текст из xml с тренировоынми даными, разбиваем его на предложения, а предложения на слова и записываем этот текст,
 # как список списков предложений в общий список текстов (исключая стоп-слова).
 for item in root.iterfind("./review/text"):
@@ -202,13 +226,11 @@ while k != 10:
     # bnb.score(X, Y)
     gnbPredicted = gnb.predict(amounts)
     print("Naive Bayes classifier predicted: \n" + str(gnbPredicted))
-    i = 0
 
     lda = LinearDiscriminantAnalysis(solver='lsqr')  # Классификация с помощью Дискриминантного анализа
     lda.fit(X, Y)
     ldaPredicted = lda.predict(amounts)
     print("Linear Discriminant Analysis predicted: \n" + str(ldaPredicted))
-    i = 0
 
     target_names = ['both', 'positive', 'negative']
     svm_report = classification_report(Y_Fact, svmPredicted, target_names=target_names)
@@ -217,17 +239,59 @@ while k != 10:
     print()
     print("SVM result table:")
     print(svm_report)
+    print(str(precision_score(Y_Fact, svmPredicted, average=None)) + " " + str(
+        recall_score(Y_Fact, svmPredicted, average=None)) + " " + str(
+        f1_score(Y_Fact, svmPredicted, average=None)) + " " + str(accuracy_score(Y_Fact, svmPredicted)))
+    svmPrecision += precision_score(Y_Fact, svmPredicted, average=None)
+    svmRecall += recall_score(Y_Fact, svmPredicted, average=None)
+    svmF1score += f1_score(Y_Fact, svmPredicted, average=None)
+    svmAccuracy += accuracy_score(Y_Fact, svmPredicted)
+
     print("Naive Bayes result table:")
     print(gnb_report)
+    print(str(precision_score(Y_Fact, gnbPredicted, average=None)) + " " + str(
+        recall_score(Y_Fact, gnbPredicted, average=None)) + " " + str(
+        f1_score(Y_Fact, gnbPredicted, average=None)) + " " + str(accuracy_score(Y_Fact, gnbPredicted)))
+
+    gnbPrecision += precision_score(Y_Fact, gnbPredicted, average=None)
+    gnbRecall += recall_score(Y_Fact, gnbPredicted, average=None)
+    gnbF1score += f1_score(Y_Fact, gnbPredicted, average=None)
+    gnbAccuracy += accuracy_score(Y_Fact, gnbPredicted)
+
     print("Linear Discriminant Analysis result table:")
     print(lda_report)
+    print(str(precision_score(Y_Fact, ldaPredicted, average=None)) + " " + str(
+        recall_score(Y_Fact, ldaPredicted, average=None)) + " " + str(
+        f1_score(Y_Fact, ldaPredicted, average=None)) + " " + str(accuracy_score(Y_Fact, ldaPredicted)))
 
-    print("svm = " + str(svm_report))
+    ldaPrecision += precision_score(Y_Fact, ldaPredicted, average=None)
+    ldaRecall += recall_score(Y_Fact, ldaPredicted, average=None)
+    ldaF1score += f1_score(Y_Fact, ldaPredicted, average=None)
+    ldaAccuracy += accuracy_score(Y_Fact, ldaPredicted)
 
-    # print(k)
     k += 1
 
-
-print("Now we're here")
+print(k)
 # Вывод результатов классифкаций
 
+svmPrecision /= k
+svmRecall /= k
+svmF1score /= k
+svmAccuracy /= k
+
+gnbPrecision /= k
+gnbRecall /= k
+gnbF1score /= k
+gnbAccuracy /= k
+
+ldaPrecision /= k
+ldaRecall /= k
+ldaF1score /= k
+ldaAccuracy /= k
+
+print("\nResult (SVM): ")
+getResult(svmPrecision, svmRecall, svmF1score, svmAccuracy)
+print("\nResult (Bayes): ")
+getResult(gnbPrecision, gnbRecall, gnbF1score, gnbAccuracy)
+print("\nResult (LDA): ")
+getResult(ldaPrecision, ldaRecall, ldaF1score, ldaAccuracy)
